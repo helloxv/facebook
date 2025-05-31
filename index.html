@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook User Survey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const SurveyApp = () => {
+            const [responses, setResponses] = useState({});
+            const [submitted, setSubmitted] = useState(false);
+            const [name, setName] = useState('');
+            const [email, setEmail] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                emailjs.init("YOUR_PUBLIC_KEY"); // Replace with your EmailJS public key
+            }, []);
+
+            const questions = [
+                {
+                    id: 'q1',
+                    text: 'How often do you use Facebook?',
+                    type: 'radio',
+                    options: ['Daily', 'Weekly', 'Monthly', 'Rarely']
+                },
+                {
+                    id: 'q2',
+                    text: 'Which Facebook feature do you use most?',
+                    type: 'select',
+                    options: ['News Feed', 'Groups', 'Messenger', 'Marketplace', 'Events']
+                },
+                {
+                    id: 'q3',
+                    text: 'How comfortable are you with Facebook\'s privacy settings?',
+                    type: 'radio',
+                    options: ['Very comfortable', 'Somewhat comfortable', 'Neutral', 'Somewhat uncomfortable', 'Very uncomfortable']
+                },
+                {
+                    id: 'q4',
+                    text: 'What type of content do you enjoy most on Facebook?',
+                    type: 'checkbox',
+                    options: ['Posts from friends', 'News articles', 'Videos', 'Memes', 'Ads']
+                },
+                {
+                    id: 'q5',
+                    text: 'What improvements would you like to see on Facebook?',
+                    type: 'textarea'
+                }
+            ];
+
+            const handleChange = (questionId, value) => {
+                setResponses({ ...responses, [questionId]: value });
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!name || !email) {
+                    setError('Please provide your name and email.');
+                    return;
+                }
+                setLoading(true);
+                setError(null);
+
+                const emailParams = {
+                    from_name: name,
+                    from_email: email,
+                    to_email: 'joversabarita@gmail.com',
+                    message: JSON.stringify(responses, null, 2),
+                };
+
+                emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', emailParams)
+                    .then(() => {
+                        setSubmitted(true);
+                        setLoading(false);
+                    }, (err) => {
+                        setError('Failed to send survey. Please try again.');
+                        setLoading(false);
+                        console.error('EmailJS error:', err);
+                    });
+            };
+
+            const shareOnFacebook = () => {
+                const url = window.location.href;
+                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+            };
+
+            const getAnalytics = () => {
+                const analytics = {};
+                Object.entries(responses).forEach(([questionId, response]) => {
+                    analytics[questionId] = analytics[questionId] || {};
+                    analytics[questionId][response] = (analytics[questionId][response] || 0) + 1;
+                });
+                return analytics;
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+                    <div className="bg-white rounded-lg shadow-xl p-6 sm:p-8 max-w-lg w-full mx-4 sm:mx-6 lg:mx-auto">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">
+                            Facebook User Survey
+                        </h1>
+                        {error && (
+                            <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4 text-sm sm:text-base">
+                                {error}
+                            </div>
+                        )}
+                        {!submitted ? (
+                            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Name</label>
+                                        <input
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm sm:text-base"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm sm:text-base"
+                                            required
+                                        />
+                                    </div>
+                                    {questions.map((question) => (
+                                        <div key={question.id} className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                {question.text}
+                                            </label>
+                                            {question.type === 'radio' && (
+                                                <div className="space-y-2">
+                                                    {question.options.map((option) => (
+                                                        <label key={option} className="flex items-center">
+                                                            <input
+                                                                type="radio"
+                                                                name={question.id}
+                                                                value={option}
+                                                                onChange={(e) => handleChange(question.id, e.target.value)}
+                                                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                                                                required
+                                                            />
+                                                            <span className="ml-2 text-gray-700 text-sm sm:text-base">{option}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {question.type === 'select' && (
+                                                <select
+                                                    onChange={(e) => handleChange(question.id, e.target.value)}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm sm:text-base"
+                                                    required
+                                                >
+                                                    <option value="">Select an option</option>
+                                                    {question.options.map((option) => (
+                                                        <option key={option} value={option}>{option}</option>
+                                                    ))}
+                                                </select>
+                                            )}
+                                            {question.type === 'checkbox' && (
+                                                <div className="space-y-2">
+                                                    {question.options.map((option) => (
+                                                        <label key={option} className="flex items-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                value={option}
+                                                                onChange={(e) => {
+                                                                    const current = responses[question.id] || [];
+                                                                    const updated = e.target.checked
+                                                                        ? [...current, option]
+                                                                        : current.filter((item) => item !== option);
+                                                                    handleChange(question.id, updated);
+                                                                }}
+                                                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                                                            />
+                                                            <span className="ml-2 text-gray-700 text-sm sm:text-base">{option}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {question.type === 'textarea' && (
+                                                <textarea
+                                                    onChange={(e) => handleChange(question.id, e.target.value)}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm sm:text-base"
+                                                    rows="4"
+                                                    required
+                                                ></textarea>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition duration-200 text-sm sm:text-base ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {loading ? 'Submitting...' : 'Submit Survey'}
+                                </button>
+                            </form>
+                        ) : (
+                            <div className="text-center">
+                                <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">
+                                    Thank You for Your Feedback!
+                                </h2>
+                                <p className="text-gray-600 mb-6 text-sm sm:text-base">
+                                    Your responses have been sent to the survey owner. Share this survey with your friends!
+                                </p>
+                                <button
+                                    onClick={shareOnFacebook}
+                                    className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 flex items-center justify-center mx-auto text-sm sm:text-base"
+                                >
+                                    <i className="fab fa-facebook-f mr-2"></i> Share on Facebook
+                                </button>
+                                <div className="mt-6">
+                                    <h3 className="text-lg sm:text-xl font-medium text-gray-800 mb-4">Response Summary</h3>
+                                    {Object.entries(getAnalytics()).map(([questionId, data]) => (
+                                        <div key={questionId} className="mb-4">
+                                            <h4 className="text-base sm:text-lg font-medium text-gray-700">
+                                                {questions.find((q) => q.id === questionId).text}
+                                            </h4>
+                                            <ul className="list-disc list-inside text-gray-600 text-sm sm:text-base">
+                                                {Object.entries(data).map(([response, count]) => (
+                                                    <li key={response}>{response}: {count} response(s)</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<SurveyApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
